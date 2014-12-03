@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Xml;
 using Microsoft.Build.BuildEngine;
 using System;
 
@@ -74,7 +75,27 @@ namespace csproj.tool
                     project.Save(projectFilePath);
                 }
             }
+            else if (args[0] == "nuget-add")
+            {
+                var xml = new XmlDocument();
+                xml.Load(args[1]);
+                var package = xml.CreateElement("package");
+                AppendAttribute(package, "id", args[2]);
+                AppendAttribute(package, "version", args[3]);
+                AppendAttribute(package, "targetFramework", args[4]);
+
+                xml.DocumentElement.AppendChild(package);
+                xml.Save(args[1]);
+            }
             return 0;
+        }
+
+        private static void AppendAttribute(XmlElement e, string name, string value)
+        {
+            var xml = e.OwnerDocument;
+            var attribute = xml.CreateAttribute(name);
+            attribute.Value = value;
+            e.Attributes.Append(attribute);
         }
 
         private static IEnumerable<BuildItemGroup> AllItemGroupsIn(Project project)
