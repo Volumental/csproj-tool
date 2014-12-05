@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Xml;
 using Microsoft.Build.BuildEngine;
 using System;
@@ -75,6 +76,33 @@ namespace csproj.tool
                     project.Save(projectFilePath);
                 }
             }
+            else if (args[0] == "relocate")
+            {
+                var projectFilePath = args[1];
+                var oldPath = args[2];
+                var newPath = args[3];
+
+                var project = new Project();
+                project.Load(projectFilePath);
+                
+                var allItems = AllItemGroupsIn(project).SelectMany(g => g.Cast<BuildItem>());
+                var references = allItems.Where(i => i.Name == "Reference");
+
+                foreach (var reference in references)
+                {
+                    var path = reference.GetMetadata("HintPath");
+                    if (path.StartsWith(oldPath))
+                    {
+                        var tmp = string.Format("{0}{1}", newPath, path.Substring(oldPath.Length));
+                        reference.SetMetadata("HintPath", tmp);
+                    }
+                }
+
+                if (project.IsDirty)
+                {
+                    project.Save(projectFilePath);
+                }
+            }
             else if (args[0] == "nuget-add")
             {
                 var xml = new XmlDocument();
@@ -87,6 +115,7 @@ namespace csproj.tool
                 xml.DocumentElement.AppendChild(package);
                 xml.Save(args[1]);
             }
+            
             return 0;
         }
 
